@@ -299,20 +299,4 @@ class RenderedPageObjectView {
         }
         return elementRendered;
     }
-
-    public void waitForRenderedElement(WebElement renderedElement)
-    {
-        long end = System.currentTimeMillis() + waitForTimeout;
-        boolean renderedElementFound = false;
-        while (System.currentTimeMillis() < end) {
-            if (renderedElement.isDisplayed()){
-                renderedElementFound = true;
-                break;
-            }
-            waitABit(WAIT_FOR_ELEMENT_PAUSE_LENGTH);
-        }
-        if (!renderedElementFound) {
-            throw new ElementNotVisibleException("Element is not visible");
-        }
-    }
 }

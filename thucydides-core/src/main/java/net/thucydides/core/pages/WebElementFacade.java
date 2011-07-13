@@ -6,6 +6,8 @@ import net.thucydides.core.webdriver.Configuration;
 import net.thucydides.core.webdriver.WebDriverFacade;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.Select;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +21,11 @@ public class WebElementFacade {
     private final WebElement webElement;
     private final WebDriver driver;
     private RenderedPageObjectView renderedView;
+
+    private static final int WAIT_FOR_ELEMENT_PAUSE_LENGTH = 50;
+    private final transient long waitForTimeout = 10000;
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(WebElementFacade.class);
 
     public WebElementFacade(final WebDriver driver, final WebElement webElement) {
         this.driver = driver;
@@ -148,13 +155,21 @@ public class WebElementFacade {
         webElement.sendKeys(Keys.ENTER);
     }
 
+       /**
+     * Waits for the text element to be rendered, clear the element, and enters the value followed by enter.
+     * @param textValue
+     */
+    public void enterValue(String textValue) {
+        waitForElementToBeVisible();
+        enterValueOnClearField(textValue);
+    }
 
     /**
      * Waits for the text element to be rendered, clear the element, and enters the value followed by tab.
      * @param textValue
      */
     public void enterValueWithTab(String textValue) {
-       //todo need a waitForRenderedElements but by the webElement (not by By.id)
+        waitForElementToBeVisible();
         enterValueOnClearField(textValue);
         webElement.sendKeys(Keys.TAB);
     }
@@ -209,20 +224,38 @@ public class WebElementFacade {
                     "The index '%s' was not found in the selectable element", index);
             throw new AssertionError(errorMessage);
         }
-
-    }
-
-
-    protected RenderedPageObjectView getRenderedView() {
-        long waitForTimeout = 5;
-        if (renderedView == null) {
-            renderedView = new RenderedPageObjectView(driver, waitForTimeout);
-        }
-        return renderedView;
     }
 
     private void waitForElementToBeVisible()
     {
-        getRenderedView().waitForRenderedElement(webElement);
+        waitForRenderedElement(webElement);
+    }
+
+   /**
+    * Waits for the drop down to be rendered and selects the element based off the index
+    * @param renderedElement: webelement that the use is waiting for
+    */
+    public void waitForRenderedElement(WebElement renderedElement)
+    {
+        long end = System.currentTimeMillis() + waitForTimeout;
+        boolean renderedElementFound = false;
+        while (System.currentTimeMillis() < end) {
+            if (renderedElement.isDisplayed()){
+                renderedElementFound = true;
+                break;
+            }
+            waitABit(WAIT_FOR_ELEMENT_PAUSE_LENGTH);
+        }
+        if (!renderedElementFound) {
+            throw new ElementNotVisibleException("Element is not visible");
+        }
+    }
+
+    private void waitABit(final long timeInMilliseconds) {
+        try {
+            Thread.sleep(timeInMilliseconds);
+        } catch (InterruptedException e) {
+            LOGGER.error("Wait interrupted", e);
+        }
     }
 }
